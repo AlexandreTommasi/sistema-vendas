@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Vendas</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        header { 
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 { color: #1e3c72; margin-bottom: 20px; }
+        
+        /* Status */
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .status-item {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .status-item.online { background: #4caf50; color: white; }
+        .status-item.offline { background: #f44336; color: white; }
+        
+        /* Dashboard Cards */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .card h3 { 
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+        .card .subtitle {
+            color: #999;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        
+        /* Forms */
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #1e3c72;
+        }
+        
+        /* Buttons */
+        .btn {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(30, 60, 114, 0.3);
+        }
+        
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        th {
+            background: #f8f9fa;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        td {
+            color: #333;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        .tab.active {
+            color: #1e3c72;
+            border-bottom-color: #1e3c72;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Sistema de Vendas</h1>
+            <div class="status-bar">
+                <div class="status-item" id="appStatus">App: Verificando...</div>
+                <div class="status-item" id="dbStatus">Database: Verificando...</div>
+            </div>
+        </header>
+
+        <!-- Dashboard -->
+        <div class="dashboard" id="dashboard">
+            <div class="card">
+                <h3>Total de Vendas</h3>
+                <div class="value" id="totalVendas">0</div>
+                <div class="subtitle" id="valorTotal">R$ 0,00</div>
+            </div>
+            <div class="card">
+                <h3>Clientes</h3>
+                <div class="value" id="totalClientes">0</div>
+                <div class="subtitle">Cadastrados</div>
+            </div>
+            <div class="card">
+                <h3>Produtos</h3>
+                <div class="value" id="totalProdutos">0</div>
+                <div class="subtitle">Ativos</div>
+            </div>
+            <div class="card">
+                <h3>Vendas Hoje</h3>
+                <div class="value" id="vendasHoje">0</div>
+                <div class="subtitle" id="valorHoje">R$ 0,00</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="section">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('vendas')">Nova Venda</button>
+                <button class="tab" onclick="switchTab('clientes')">Clientes</button>
+                <button class="tab" onclick="switchTab('produtos')">Produtos</button>
+                <button class="tab" onclick="switchTab('historico')">Histórico</button>
+            </div>
+
+            <!-- Nova Venda -->
+            <div id="vendas" class="tab-content active">
+                <h2>💰 Registrar Nova Venda</h2>
+                <form id="vendaForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Cliente</label>
+                            <select id="venda_cliente" required>
+                                <option value="">Selecione...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Produto</label>
+                            <select id="venda_produto" required onchange="updatePrice()">
+                                <option value="">Selecione...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Quantidade</label>
+                            <input type="number" id="venda_quantidade" min="1" required onchange="updateTotal()">
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Total</label>
+                            <input type="number" id="venda_valor" step="0.01" readonly>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Registrar Venda</button>
+                </form>
+            </div>
+
+            <!-- Clientes -->
+            <div id="clientes" class="tab-content">
+                <h2>👥 Cadastro de Clientes</h2>
+                <form id="clienteForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nome</label>
+                            <input type="text" id="cliente_nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="cliente_email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Telefone</label>
+                            <input type="tel" id="cliente_telefone">
+                        </div>
+                        <div class="form-group">
+                            <label>CPF</label>
+                            <input type="text" id="cliente_cpf" maxlength="14">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Cadastrar Cliente</button>
+                </form>
+                <div class="table-container">
+                    <table id="clientesTable">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Telefone</th>
+                                <th>CPF</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Produtos -->
+            <div id="produtos" class="tab-content">
+                <h2>📦 Cadastro de Produtos</h2>
+                <form id="produtoForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nome</label>
+                            <input type="text" id="produto_nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Categoria</label>
+                            <input type="text" id="produto_categoria" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Preço</label>
+                            <input type="number" id="produto_preco" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Estoque</label>
+                            <input type="number" id="produto_estoque" min="0" required>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Descrição</label>
+                            <input type="text" id="produto_descricao">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Cadastrar Produto</button>
+                </form>
+                <div class="table-container">
+                    <table id="produtosTable">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Categoria</th>
+                                <th>Preço</th>
+                                <th>Estoque</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Histórico -->
+            <div id="historico" class="tab-content">
+                <h2>📈 Histórico de Vendas</h2>
+                <div class="table-container">
+                    <table id="vendasTable">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Produto</th>
+                                <th>Qtd</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let produtos = [];
+        let clientes = [];
+
+        // Check status
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                document.getElementById('appStatus').textContent = 'App: Online';
+                document.getElementById('appStatus').className = 'status-item online';
+                document.getElementById('dbStatus').textContent = `Database: ${data.database}`;
+                document.getElementById('dbStatus').className = `status-item ${data.database === 'conectado' ? 'online' : 'offline'}`;
+            } catch (error) {
+                document.getElementById('appStatus').textContent = 'App: Offline';
+                document.getElementById('appStatus').className = 'status-item offline';
+            }
+        }
+
+        // Load dashboard
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/dashboard');
+                const data = await response.json();
+                document.getElementById('totalVendas').textContent = data.vendas_total || 0;
+                document.getElementById('valorTotal').textContent = `R$ ${(data.vendas_valor || 0).toFixed(2)}`;
+                document.getElementById('totalClientes').textContent = data.clientes_total || 0;
+                document.getElementById('totalProdutos').textContent = data.produtos_total || 0;
+                document.getElementById('vendasHoje').textContent = data.vendas_hoje || 0;
+                document.getElementById('valorHoje').textContent = `R$ ${(data.vendas_hoje_valor || 0).toFixed(2)}`;
+            } catch (error) {
+                console.error('Erro ao carregar dashboard:', error);
+            }
+        }
+
+        // Load data
+        async function loadClientes() {
+            try {
+                const response = await fetch('/api/clientes');
+                clientes = await response.json();
+                
+                // Update select
+                const select = document.getElementById('venda_cliente');
+                select.innerHTML = '<option value="">Selecione...</option>';
+                clientes.forEach(c => {
+                    select.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+                });
+                
+                // Update table
+                const tbody = document.querySelector('#clientesTable tbody');
+                tbody.innerHTML = clientes.map(c => `
+                    <tr>
+                        <td>${c.nome}</td>
+                        <td>${c.email}</td>
+                        <td>${c.telefone || '-'}</td>
+                        <td>${c.cpf || '-'}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Erro ao carregar clientes:', error);
+            }
+        }
+
+        async function loadProdutos() {
+            try {
+                const response = await fetch('/api/produtos');
+                produtos = await response.json();
+                
+                // Update select
+                const select = document.getElementById('venda_produto');
+                select.innerHTML = '<option value="">Selecione...</option>';
+                produtos.forEach(p => {
+                    select.innerHTML += `<option value="${p.id}" data-price="${p.preco}">${p.nome} - R$ ${p.preco.toFixed(2)}</option>`;
+                });
+                
+                // Update table
+                const tbody = document.querySelector('#produtosTable tbody');
+                tbody.innerHTML = produtos.map(p => `
+                    <tr>
+                        <td>${p.nome}</td>
+                        <td>${p.categoria}</td>
+                        <td>R$ ${p.preco.toFixed(2)}</td>
+                        <td>${p.estoque}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Erro ao carregar produtos:', error);
+            }
+        }
+
+        async function loadVendas() {
+            try {
+                const response = await fetch('/api/vendas');
+                const vendas = await response.json();
+                
+                const tbody = document.querySelector('#vendasTable tbody');
+                tbody.innerHTML = vendas.map(v => `
+                    <tr>
+                        <td>${new Date(v.data_venda).toLocaleDateString('pt-BR')}</td>
+                        <td>${v.cliente_nome || '-'}</td>
+                        <td>${v.produto_nome || '-'}</td>
+                        <td>${v.quantidade}</td>
+                        <td>R$ ${v.valor_total.toFixed(2)}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Erro ao carregar vendas:', error);
+            }
+        }
+
+        // Forms
+        document.getElementById('clienteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                nome: document.getElementById('cliente_nome').value,
+                email: document.getElementById('cliente_email').value,
+                telefone: document.getElementById('cliente_telefone').value,
+                cpf: document.getElementById('cliente_cpf').value
+            };
+            
+            try {
+                await fetch('/api/clientes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                document.getElementById('clienteForm').reset();
+                loadClientes();
+                loadDashboard();
+            } catch (error) {
+                console.error('Erro ao cadastrar cliente:', error);
+            }
+        });
+
+        document.getElementById('produtoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                nome: document.getElementById('produto_nome').value,
+                descricao: document.getElementById('produto_descricao').value,
+                categoria: document.getElementById('produto_categoria').value,
+                preco: parseFloat(document.getElementById('produto_preco').value),
+                estoque: parseInt(document.getElementById('produto_estoque').value)
+            };
+            
+            try {
+                await fetch('/api/produtos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                document.getElementById('produtoForm').reset();
+                loadProdutos();
+                loadDashboard();
+            } catch (error) {
+                console.error('Erro ao cadastrar produto:', error);
+            }
+        });
+
+        document.getElementById('vendaForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                cliente_id: parseInt(document.getElementById('venda_cliente').value),
+                produto_id: parseInt(document.getElementById('venda_produto').value),
+                quantidade: parseInt(document.getElementById('venda_quantidade').value),
+                valor_total: parseFloat(document.getElementById('venda_valor').value)
+            };
+            
+            try {
+                await fetch('/api/vendas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                document.getElementById('vendaForm').reset();
+                loadVendas();
+                loadDashboard();
+                alert('Venda registrada com sucesso!');
+            } catch (error) {
+                console.error('Erro ao registrar venda:', error);
+            }
+        });
+
+        // Helpers
+        function updatePrice() {
+            const select = document.getElementById('venda_produto');
+            const option = select.options[select.selectedIndex];
+            if (option && option.dataset.price) {
+                updateTotal();
+            }
+        }
+
+        function updateTotal() {
+            const select = document.getElementById('venda_produto');
+            const option = select.options[select.selectedIndex];
+            const quantidade = document.getElementById('venda_quantidade').value;
+            
+            if (option && option.dataset.price && quantidade) {
+                const total = parseFloat(option.dataset.price) * parseInt(quantidade);
+                document.getElementById('venda_valor').value = total.toFixed(2);
+            }
+        }
+
+        function switchTab(tab) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            // Activate selected tab
+            event.target.classList.add('active');
+            document.getElementById(tab).classList.add('active');
+            
+            // Load data if needed
+            if (tab === 'historico') loadVendas();
+        }
+
+        // Initialize
+        checkStatus();
+        loadDashboard();
+        loadClientes();
+        loadProdutos();
+        setInterval(checkStatus, 5000);
+        setInterval(loadDashboard, 10000);
+    </script>
+</body>
+</html>
